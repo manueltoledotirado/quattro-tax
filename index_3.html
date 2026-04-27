@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quattro Tax — Procesador Inteligente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --navy:#0f1e3c; --navy2:#1a2f56; --gold:#c9a84c; --gold2:#e8c87a;
+  --cream:#f8f5ef; --cream2:#ede9e0; --text:#1a1a2e; --muted:#6b7280;
+  --white:#fff; --green:#16a34a; --green-bg:#dcfce7;
+  --red:#dc2626; --red-bg:#fee2e2; --blue:#2563eb; --blue-bg:#dbeafe;
+  --amber:#d97706; --amber-bg:#fef3c7; --border:#d1cbbf; --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+.header{background:var(--navy);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:sticky;top:0;z-index:200}
+.logo{font-family:'DM Serif Display',serif;font-size:20px;color:white}
+.logo em{color:var(--gold);font-style:normal}
+.api-btn{display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,0.7);cursor:pointer;padding:6px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:20px;background:none;font-family:'DM Sans',sans-serif}
+.dot{width:7px;height:7px;border-radius:50%;background:#ef4444}
+.dot.on{background:#22c55e}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
+.overlay.hide{display:none}
+.modal{background:white;border-radius:16px;padding:2rem;width:100%;max-width:460px}
+.modal h2{font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);margin-bottom:6px}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6}
+.modal a{font-size:12px;color:var(--blue);display:block;margin-bottom:1rem}
+.modal input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;margin-bottom:8px}
+.modal input:focus{outline:none;border-color:var(--navy)}
+.mnote{font-size:11px;color:var(--muted);margin-bottom:1.25rem}
+.main{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 60px)}
+.left{background:white;border-right:1px solid var(--border);padding:1.25rem;overflow-y:auto}
+.plbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:.75rem}
+.type-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.25rem}
+.tbtn{padding:10px;border:1.5px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);background:none;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.tbtn.active{border-color:var(--navy);background:var(--navy);color:white}
+.dsec{margin-bottom:1rem}
+.dsec-t{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:6px}
+.zone{border:1.5px dashed var(--border);border-radius:10px;padding:12px;text-align:center;cursor:pointer;position:relative;background:var(--cream);transition:all 0.2s}
+.zone:hover,.zone.over{border-color:var(--navy);background:white}
+.zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.zone-i{font-size:20px;margin-bottom:2px}
+.zone-l{font-size:12px;color:var(--muted)}
+.zone-l strong{color:var(--navy);font-size:13px;display:block;margin-bottom:2px}
+.flist{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.fitem{display:flex;align-items:center;padding:5px 8px;background:white;border:1px solid var(--border);border-radius:7px;font-size:12px;gap:6px}
+.fname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--navy)}
+.fst{font-size:11px;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.fst.pending{background:var(--amber-bg);color:var(--amber)}
+.fst.reading{background:var(--blue-bg);color:var(--blue)}
+.fst.done{background:var(--green-bg);color:var(--green)}
+.fst.error{background:var(--red-bg);color:var(--red)}
+.frem{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0}
+.frem:hover{color:var(--red)}
+.pbtn{width:100%;padding:13px;background:var(--navy);color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:1rem;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+.pbtn:hover{background:var(--navy2)}
+.pbtn:disabled{opacity:0.5;cursor:not-allowed}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.right{padding:1.5rem 2rem;overflow-y:auto}
+.ai-bar{background:var(--blue-bg);border:1px solid #93c5fd;border-radius:10px;padding:11px 14px;font-size:13px;color:var(--blue);margin-bottom:1.25rem;display:flex;align-items:center;gap:10px}
+.ai-bar.ok{background:var(--green-bg);border-color:#86efac;color:var(--green)}
+.card{background:white;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem;overflow:hidden}
+.card-h{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-t{font-size:14px;font-weight:600;color:var(--navy)}
+.bdg{font-size:11px;padding:2px 10px;border-radius:20px;background:var(--cream2);color:var(--muted)}
+.bdg.ai{background:var(--green-bg);color:var(--green)}
+.card-b{padding:15px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
+.fg.g3{grid-template-columns:1fr 1fr 1fr}
+.fg.g1{grid-template-columns:1fr}
+.f{display:flex;flex-direction:column;gap:4px}
+.f label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+.f input,.f select{padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--cream);transition:all 0.15s}
+.f input:focus,.f select:focus{outline:none;border-color:var(--navy);background:white}
+.f input.ai{border-color:var(--green);background:#f0fdf4}
+.cw{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ck{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;transition:all 0.15s;user-select:none}
+.ck:hover{border-color:var(--navy)}
+.ck.on{border-color:var(--navy);background:var(--navy);color:white}
+.ck-b{width:14px;height:14px;border-radius:3px;border:1.5px solid currentColor;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px}
+.ck.on .ck-b::after{content:'✓'}
+.drow{background:var(--cream);border-radius:8px;padding:11px;margin-bottom:8px}
+.drow-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--navy);margin-bottom:8px}
+.ibtn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px}
+.ibtn:hover{color:var(--red)}
+.abtn{width:100%;padding:8px;border:1.5px dashed var(--border);border-radius:8px;background:none;cursor:pointer;font-size:12px;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all 0.15s;margin-top:4px}
+.abtn:hover{border-color:var(--navy);color:var(--navy)}
+.ext-box{background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:13px;margin-bottom:11px}
+.ext-box h4{font-size:12px;font-weight:600;color:var(--green);margin-bottom:8px}
+.ei{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #dcfce7}
+.ei:last-child{border-bottom:none}
+.ei .k{color:var(--muted)}
+.ei .v{font-weight:600;color:var(--navy)}
+.gen-box{background:var(--navy);border-radius:var(--radius);padding:1.5rem;color:white;margin-top:1.5rem}
+.gen-box h3{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px}
+.gen-box p{font-size:13px;opacity:0.7;margin-bottom:1.25rem}
+.gbtn{padding:13px 28px;background:var(--gold);color:var(--navy);border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s}
+.gbtn:hover{background:var(--gold2)}
+.gbtn:disabled{opacity:0.5;cursor:not-allowed}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:white;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;transform:translateY(80px);transition:transform 0.25s;z-index:999}
+.toast.show{transform:translateY(0)}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="overlay hide" id="modal">
+  <div class="modal">
+    <h2>API Key de Anthropic</h2>
+    <p>Para leer documentos con IA necesitas una API key. Regístrate gratis en Anthropic y compra créditos mínimos ($5 alcanzan para cientos de declaraciones).</p>
+    <a href="https://console.anthropic.com" target="_blank">→ Obtener API key en console.anthropic.com</a>
+    <input type="password" id="key-input" placeholder="sk-ant-api03-..." onkeydown="if(event.key==='Enter')saveKey()">
+    <div class="mnote">Tu key se guarda solo en este browser. No se envía a ningún servidor externo.</div>
+    <button class="pbtn" style="margin-top:0" onclick="saveKey()">Guardar y continuar</button>
+  </div>
+</div>
+
+<div class="header">
+  <div class="logo">Quattro <em>Tax</em> — Procesador Inteligente 2025</div>
+  <button class="api-btn" onclick="document.getElementById('modal').classList.remove('hide')">
+    <div class="dot" id="api-dot"></div>
+    <span id="api-txt">Sin API key</span>
+  </button>
+</div>
+
+<div class="main">
+  <div class="left">
+    <div class="plbl">Tipo de cliente</div>
+    <div class="type-row">
+      <button class="tbtn active" id="btn-ind" onclick="setType('individual')">👤 Individual</button>
+      <button class="tbtn" id="btn-emp" onclick="setType('empresa')">🏢 Empresa</button>
+    </div>
+
+    <div id="docs-ind">
+      <div class="plbl">Documentos del cliente</div>
+      <div class="dsec">
+        <div class="dsec-t">📄 W-2 (salarios)</div>
+        <div class="zone" ondragover="dOver(event,this)" ondragleave="this.classList.remove('over')" ondrop="dDrop(event,'w2')">
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="addFiles(this.files,'w2')">
+          <div class="zone-i">📥</div><div class="zone-l"><strong>W-2</strong>Arrastra o haz clic</div>
+        </div>
+        <div class="flist" id="fl-w2"></div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-t">📄 1099s (NEC, INT, DIV, R, G)</div>
+        <div class="zone" ondragover="dOver(event,this)" ondragleave="this.classList.remove('over')" ondrop="dDrop(event,'f99')">
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="addFiles(this.files,'f99')">
+          <div class="zone-i">📥</div><div class="zone-l"><strong>1099-NEC / INT / DIV / R</strong>Arrastra o haz clic</div>
+        </div>
+        <div class="flist" id="fl-f99"></div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-t">🏥 1095-A (Obama Care)</div>
+        <div class="zone" ondragover="dOver(event,this)" ondragleave="this.classList.remove('over')" ondrop="dDrop(event,'oc')">
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="addFiles(this.files,'oc')">
+          <div class="zone-i">📥</div><div class="zone-l"><strong>Form 1095-A</strong>Del Marketplace</div>
+        </div>
+        <div class="flist" id="fl-oc"></div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-t">🏦 K-1 / Otros documentos</div>
+        <div class="zone" ondragover="dOver(event,this)" ondragleave="this.classList.remove('over')" ondrop="dDrop(event,'otros')">
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="addFiles(this.files,'otros')">
+          <div class="zone-i">📥</div><div class="zone-l"><strong>K-1, ID, 1098, otros</strong>Arrastra o haz clic</div>
+        </div>
+        <div class="flist" id="fl-otros"></div>
+      </div>
+    </div>
+
+    <div id="docs-emp" class="hide">
+      <div class="plbl">Documentos de la empresa</div>
+      <div class="dsec">
+        <div class="dsec-t">📊 P&L / Balance Sheet</div>
+        <div class="zone" ondragover="dOver(event,this)" ondragleave="this.classList.remove('over')" ondrop="dDrop(event,'pl')">
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx" multiple onchange="addFiles(this.files,'pl')">
+          <div class="zone-i">📥</div><div class="zone-l"><strong>P&L + Balance Sheet</strong>PDF o Excel</div>
+        </div>
+        <div class="flist" id="fl-pl"></div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-t">🏦 Bank Statements / K-1s / Otros</div>
+        <div class="zone" ondragover="dOver(event,this)" ondragleave="this.classList.remove('over')" ondrop="dDrop(event,'emp-otros')">
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx" multiple onchange="addFiles(this.files,'emp-otros')">
+          <div class="zone-i">📥</div><div class="zone-l"><strong>Bank statements, K-1s, contratos</strong>Arrastra o haz clic</div>
+        </div>
+        <div class="flist" id="fl-emp-otros"></div>
+      </div>
+    </div>
+
+    <button class="pbtn" id="pbtn" onclick="processDocs()">
+      <span id="pbtn-lbl">✨ Leer documentos con IA</span>
+    </button>
+  </div>
+
+  <div class="right">
+    <div class="ai-bar hide" id="ai-bar">
+      <div class="spin"></div>
+      <span id="ai-bar-txt">Procesando...</span>
+    </div>
+
+    <!-- INDIVIDUAL FORM -->
+    <div id="form-ind">
+      <div class="card">
+        <div class="card-h"><div class="card-t">Datos del contribuyente</div><div class="bdg" id="b-per">Manual</div></div>
+        <div class="card-b">
+          <div class="fg">
+            <div class="f"><label>Nombre(s)</label><input type="text" id="i-first" placeholder="María Elena"></div>
+            <div class="f"><label>Apellido(s)</label><input type="text" id="i-last" placeholder="González López"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>SSN</label><input type="text" id="i-ssn" placeholder="XXX-XX-XXXX"></div>
+            <div class="f"><label>Filing Status</label>
+              <select id="i-fs">
+                <option value="single">Single</option>
+                <option value="mfj">Married Filing Jointly</option>
+                <option value="mfs">Married Filing Separately</option>
+                <option value="hoh">Head of Household</option>
+                <option value="qss">Qualifying Surviving Spouse</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg g3">
+            <div class="f"><label>Dirección</label><input type="text" id="i-addr" placeholder="1234 Main St"></div>
+            <div class="f"><label>Ciudad</label><input type="text" id="i-city" placeholder="Houston"></div>
+            <div class="f"><label>ZIP</label><input type="text" id="i-zip" placeholder="77001"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>Email</label><input type="email" id="i-email" placeholder="cliente@email.com"></div>
+            <div class="f"><label>Teléfono</label><input type="tel" id="i-phone" placeholder="(713) 555-0000"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>Nombre cónyuge</label><input type="text" id="i-cnom" placeholder="Juan García"></div>
+            <div class="f"><label>SSN cónyuge</label><input type="text" id="i-cssn" placeholder="XXX-XX-XXXX"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card hide" id="ext-card">
+        <div class="card-h"><div class="card-t">✨ Datos extraídos por IA</div><div class="bdg ai">Auto-llenado</div></div>
+        <div class="card-b"><div id="ext-con"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-t">Ingresos</div><div class="bdg" id="b-ing">Manual</div></div>
+        <div class="card-b">
+          <div class="fg">
+            <div class="f"><label>W-2 Wages (Box 1) $</label><input type="number" id="i-w2" placeholder="0"></div>
+            <div class="f"><label>Federal Tax Withheld (Box 2) $</label><input type="number" id="i-fed" placeholder="0"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>SS Withheld (Box 4) $</label><input type="number" id="i-ss" placeholder="0"></div>
+            <div class="f"><label>Medicare Withheld (Box 6) $</label><input type="number" id="i-med" placeholder="0"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>1099-NEC $</label><input type="number" id="i-nec" placeholder="0"></div>
+            <div class="f"><label>1099-MISC $</label><input type="number" id="i-misc" placeholder="0"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>Intereses 1099-INT $</label><input type="number" id="i-int" placeholder="0"></div>
+            <div class="f"><label>Dividendos 1099-DIV $</label><input type="number" id="i-div" placeholder="0"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>IRA/Pensión 1099-R $</label><input type="number" id="i-ira" placeholder="0"></div>
+            <div class="f"><label>Unemployment 1099-G $</label><input type="number" id="i-unemp" placeholder="0"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>Renta de propiedades $</label><input type="number" id="i-rent" placeholder="0"></div>
+            <div class="f"><label>K-1 income $</label><input type="number" id="i-k1" placeholder="0"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-t">Obama Care — Form 1095-A</div><div class="bdg" id="b-oc">Manual</div></div>
+        <div class="card-b">
+          <div class="fg g3">
+            <div class="f"><label>Premiums anuales (Col A) $</label><input type="number" id="i-oca" placeholder="0"></div>
+            <div class="f"><label>SLCSP (Col B) $</label><input type="number" id="i-ocb" placeholder="0"></div>
+            <div class="f"><label>Advance PTC (Col C) $</label><input type="number" id="i-occ" placeholder="0"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>MAGI del hogar $</label><input type="number" id="i-magi" placeholder="0"></div>
+            <div class="f"><label>Tamaño de familia</label><input type="number" id="i-fam" placeholder="1" min="1"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-t">Dependientes</div></div>
+        <div class="card-b">
+          <div id="dep-list"></div>
+          <button class="abtn" onclick="addDep()">+ Agregar dependiente</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-t">Situaciones especiales</div></div>
+        <div class="card-b"><div class="cw" id="sits"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-t">Depósito directo del reembolso</div></div>
+        <div class="card-b">
+          <div class="fg g3">
+            <div class="f"><label>Routing Number</label><input type="text" id="i-rtn" placeholder="111000025"></div>
+            <div class="f"><label>Account Number</label><input type="text" id="i-acn" placeholder="123456789"></div>
+            <div class="f"><label>Tipo de cuenta</label>
+              <select id="i-act"><option value="checking">Checking</option><option value="savings">Savings</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPRESA FORM -->
+    <div id="form-emp" class="hide">
+      <div class="card">
+        <div class="card-h"><div class="card-t">Datos de la empresa</div><div class="bdg" id="b-emp">Manual</div></div>
+        <div class="card-b">
+          <div class="fg">
+            <div class="f"><label>Nombre legal</label><input type="text" id="e-nom" placeholder="Restaurante El Sol LLC"></div>
+            <div class="f"><label>Tipo de entidad</label>
+              <select id="e-tipo">
+                <option value="S-Corp">S-Corporation (1120-S)</option>
+                <option value="C-Corp">C-Corporation (1120)</option>
+                <option value="LLC-Multi">LLC Multi-member (1065)</option>
+                <option value="Partnership">Partnership (1065)</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>EIN Federal</label><input type="text" id="e-ein" placeholder="XX-XXXXXXX"></div>
+            <div class="f"><label>Texas Taxpayer Number</label><input type="text" id="e-txn" placeholder="12345678901"></div>
+          </div>
+          <div class="fg g1">
+            <div class="f"><label>Dirección</label><input type="text" id="e-addr" placeholder="2500 Westpark Dr, Houston TX 77005"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>Actividad principal</label><input type="text" id="e-act" placeholder="Restaurant, Retail..."></div>
+            <div class="f"><label>Email</label><input type="email" id="e-email" placeholder="info@empresa.com"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-t">Estado de resultados (P&L)</div><div class="bdg" id="b-pl">Manual</div></div>
+        <div class="card-b">
+          <div class="fg">
+            <div class="f"><label>Gross Receipts / Ventas $</label><input type="number" id="e-rev" placeholder="0"></div>
+            <div class="f"><label>Cost of Goods Sold $</label><input type="number" id="e-cogs" placeholder="0"></div>
+          </div>
+          <div class="fg g3">
+            <div class="f"><label>Salarios W-2 $</label><input type="number" id="e-wag" placeholder="0"></div>
+            <div class="f"><label>Comp. oficiales $</label><input type="number" id="e-ofc" placeholder="0"></div>
+            <div class="f"><label>Renta del local $</label><input type="number" id="e-rnt" placeholder="0"></div>
+          </div>
+          <div class="fg g3">
+            <div class="f"><label>Publicidad $</label><input type="number" id="e-adv" placeholder="0"></div>
+            <div class="f"><label>Utilities $</label><input type="number" id="e-uti" placeholder="0"></div>
+            <div class="f"><label>Insurance $</label><input type="number" id="e-ins" placeholder="0"></div>
+          </div>
+          <div class="fg g3">
+            <div class="f"><label>Reparaciones $</label><input type="number" id="e-rep" placeholder="0"></div>
+            <div class="f"><label>Taxes y licencias $</label><input type="number" id="e-txl" placeholder="0"></div>
+            <div class="f"><label>Intereses $</label><input type="number" id="e-int" placeholder="0"></div>
+          </div>
+          <div class="fg">
+            <div class="f"><label>Depreciación $</label><input type="number" id="e-dep" placeholder="0"></div>
+            <div class="f"><label>Otros gastos $</label><input type="number" id="e-oth" placeholder="0"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div class="card-t">Oficiales / Miembros</div></div>
+        <div class="card-b">
+          <div id="of-list"></div>
+          <button class="abtn" onclick="addOficial()">+ Agregar oficial / miembro</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="gen-box">
+      <h3>Generar declaración</h3>
+      <p>Genera todos los PDFs del IRS pre-llenados y descárgalos en un ZIP listo para revisar y firmar.</p>
+      <button class="gbtn" id="gbtn" onclick="generatePDFs(this)">⬇ Generar y Descargar PDFs</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var apiKey = localStorage.getItem('quattro_key') || '';
+var clientType = 'individual';
+var files = {};
+var depN = 0;
+var ofN = 0;
+
+var SITS = [
+  'Pagos adelantados Child Tax Credit',
+  'Obama Care / 1095-A del Marketplace',
+  'Vivio separado del conyuge todo el ano',
+  'Ingresos en otro estado',
+  'Estudiante / prestamos estudiantiles',
+  'Discapacidad en el hogar',
+  'Intereses hipotecarios (1098)',
+  'Compra o venta de vivienda',
+  'Impuestos de propiedad pagados',
+  'Gastos medicos significativos',
+  'Contribuciones beneficas',
+  'Contribuciones a IRA',
+  'Cuenta bancaria en el extranjero',
+  'Criptomonedas',
+  'Venta de acciones / inversiones',
+  'Gastos de cuidado de ninos'
+];
+
+function init() {
+  updateApiUI();
+  if (!apiKey) {
+    document.getElementById('modal').classList.remove('hide');
+  }
+  buildSits();
+}
+
+function buildSits() {
+  var wrap = document.getElementById('sits');
+  wrap.innerHTML = SITS.map(function(s, i) {
+    return '<div class="ck" id="sit-' + i + '" onclick="this.classList.toggle(\'on\')"><div class="ck-b"></div>' + s + '</div>';
+  }).join('');
+}
+
+function saveKey() {
+  var v = document.getElementById('key-input').value.trim();
+  if (!v.startsWith('sk-ant')) {
+    alert('La key debe empezar con sk-ant-...');
+    return;
+  }
+  apiKey = v;
+  localStorage.setItem('quattro_key', v);
+  updateApiUI();
+  document.getElementById('modal').classList.add('hide');
+  toast('API key guardada');
+}
+
+function updateApiUI() {
+  document.getElementById('api-dot').classList.toggle('on', !!apiKey);
+  document.getElementById('api-txt').textContent = apiKey ? 'IA conectada' : 'Sin API key';
+}
+
+function setType(t) {
+  clientType = t;
+  document.getElementById('btn-ind').classList.toggle('active', t === 'individual');
+  document.getElementById('btn-emp').classList.toggle('active', t === 'empresa');
+  document.getElementById('docs-ind').classList.toggle('hide', t !== 'individual');
+  document.getElementById('docs-emp').classList.toggle('hide', t !== 'empresa');
+  document.getElementById('form-ind').classList.toggle('hide', t !== 'individual');
+  document.getElementById('form-emp').classList.toggle('hide', t !== 'empresa');
+}
+
+function dOver(e, el) {
+  e.preventDefault();
+  el.classList.add('over');
+}
+
+function dDrop(e, cat) {
+  e.preventDefault();
+  e.target.closest('.zone').classList.remove('over');
+  addFiles(e.dataTransfer.files, cat);
+}
+
+function addFiles(fileList, cat) {
+  if (!files[cat]) files[cat] = [];
+  var promises = [];
+  for (var i = 0; i < fileList.length; i++) {
+    promises.push(readFile(fileList[i], cat));
+  }
+  Promise.all(promises).then(function() { renderFiles(cat); });
+}
+
+function readFile(file, cat) {
+  return new Promise(function(res) {
+    var r = new FileReader();
+    r.onload = function() {
+      files[cat].push({ name: file.name, base64: r.result.split(',')[1], type: file.type, cat: cat, status: 'pending' });
+      res();
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+function renderFiles(cat) {
+  var el = document.getElementById('fl-' + cat);
+  if (!el) return;
+  var list = files[cat] || [];
+  var stLabels = { pending: 'Pendiente', reading: 'Leyendo...', done: 'Listo', error: 'Error' };
+  el.innerHTML = list.map(function(f, i) {
+    return '<div class="fitem">' +
+      '<span class="fname">' + f.name + '</span>' +
+      '<span class="fst ' + f.status + '">' + (stLabels[f.status] || f.status) + '</span>' +
+      '<button class="frem" onclick="removeFile(\'' + cat + '\',' + i + ')">x</button>' +
+      '</div>';
+  }).join('');
+}
+
+function removeFile(cat, i) {
+  files[cat].splice(i, 1);
+  renderFiles(cat);
+}
+
+function processDocs() {
+  if (!apiKey) {
+    document.getElementById('modal').classList.remove('hide');
+    return;
+  }
+  var allFiles = [];
+  Object.keys(files).forEach(function(cat) {
+    files[cat].forEach(function(f) { allFiles.push(f); });
+  });
+  if (!allFiles.length) { toast('Sube al menos un documento'); return; }
+
+  var btn = document.getElementById('pbtn');
+  var lbl = document.getElementById('pbtn-lbl');
+  btn.disabled = true;
+  lbl.innerHTML = '<span class="spin"></span> Procesando con IA...';
+
+  var bar = document.getElementById('ai-bar');
+  bar.className = 'ai-bar';
+  document.getElementById('ai-bar-txt').textContent = 'Enviando ' + allFiles.length + ' documento(s) a Claude...';
+
+  Object.keys(files).forEach(function(cat) {
+    files[cat].forEach(function(f) { f.status = 'reading'; });
+    renderFiles(cat);
+  });
+
+  var docs = allFiles.map(function(f) {
+    return { name: f.name, base64: f.base64, type: f.type, category: f.cat };
+  });
+
+  fetch('/api/extract', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+    body: JSON.stringify({ documents: docs, client_type: clientType })
+  })
+  .then(function(res) {
+    if (!res.ok) return res.json().then(function(e) { throw new Error(e.error || 'Error ' + res.status); });
+    return res.json();
+  })
+  .then(function(result) {
+    if (!result.success) throw new Error(result.error || 'Error procesando');
+    Object.keys(files).forEach(function(cat) {
+      files[cat].forEach(function(f) { f.status = 'done'; });
+      renderFiles(cat);
+    });
+    fillForm(result.data);
+    showExtracted(result.data, allFiles.length);
+    bar.className = 'ai-bar ok';
+    document.getElementById('ai-bar-txt').textContent = allFiles.length + ' documento(s) procesados. Revisa los datos abajo.';
+    toast('Documentos leidos exitosamente');
+  })
+  .catch(function(err) {
+    Object.keys(files).forEach(function(cat) {
+      files[cat].forEach(function(f) { f.status = 'error'; });
+      renderFiles(cat);
+    });
+    bar.className = 'ai-bar';
+    document.getElementById('ai-bar-txt').textContent = 'Error — verifica tu API key';
+    toast('Error: ' + err.message);
+  })
+  .finally(function() {
+    btn.disabled = false;
+    lbl.textContent = 'Leer documentos con IA';
+  });
+}
+
+function fillForm(d) {
+  function set(id, val) {
+    var el = document.getElementById(id);
+    if (el && val !== undefined && val !== null && val !== '' && val !== 0 && String(val) !== '0') {
+      el.value = val;
+      el.classList.add('ai');
+    }
+  }
+  function markAI(id) {
+    var el = document.getElementById(id);
+    if (el) { el.className = 'bdg ai'; el.textContent = 'Auto-llenado'; }
+  }
+
+  if (clientType === 'individual') {
+    set('i-first', d.nombre); set('i-last', d.apellido); set('i-ssn', d.ssn);
+    set('i-addr', d.address); set('i-city', d.city); set('i-zip', d.zip);
+    set('i-w2', d.w2_wages); set('i-fed', d.federal_withheld);
+    set('i-ss', d.ss_withheld); set('i-med', d.medicare_withheld);
+    set('i-nec', d.income_1099_nec); set('i-misc', d.income_1099_misc);
+    set('i-int', d.interest_1099_int); set('i-div', d.dividends_1099_div);
+    set('i-ira', d.ira_1099_r); set('i-unemp', d.unemployment_1099_g);
+    set('i-oca', d.oc_premiums); set('i-ocb', d.oc_slcsp); set('i-occ', d.oc_advance_ptc);
+    set('i-magi', d.oc_magi); set('i-fam', d.oc_family_size);
+    set('i-k1', d.k1_income); set('i-rent', d.rental_income);
+    markAI('b-per'); markAI('b-ing');
+    if (d.tiene_obamacare) markAI('b-oc');
+  } else {
+    set('e-nom', d.nombre_empresa); set('e-ein', d.ein); set('e-addr', d.address);
+    set('e-rev', d.gross_receipts); set('e-cogs', d.cogs);
+    set('e-wag', d.wages); set('e-ofc', d.officer_comp); set('e-rnt', d.rent);
+    set('e-adv', d.advertising); set('e-uti', d.utilities); set('e-ins', d.insurance);
+    set('e-rep', d.repairs); set('e-txl', d.taxes_licenses); set('e-int', d.interest);
+    set('e-dep', d.depreciation); set('e-oth', d.other_expenses);
+    if (d.tipo_entidad) document.getElementById('e-tipo').value = d.tipo_entidad;
+    markAI('b-emp'); markAI('b-pl');
+  }
+}
+
+function showExtracted(d, count) {
+  var card = document.getElementById('ext-card');
+  var con = document.getElementById('ext-con');
+  card.classList.remove('hide');
+  var items = Object.keys(d).filter(function(k) {
+    return d[k] !== null && d[k] !== '' && d[k] !== 0 && k !== 'notas';
+  }).map(function(k) {
+    var v = typeof d[k] === 'number' ? '$' + d[k].toLocaleString() : String(d[k]);
+    return '<div class="ei"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>';
+  }).join('');
+  con.innerHTML = '<div class="ext-box"><h4>Datos extraidos de ' + count + ' documento(s)</h4>' + items +
+    (d.notas ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #dcfce7;font-size:12px;color:var(--muted)">' + d.notas + '</div>' : '') + '</div>';
+}
+
+function addDep() {
+  depN++;
+  var n = depN;
+  var div = document.createElement('div');
+  div.className = 'drow';
+  div.id = 'dep-' + n;
+  div.innerHTML = '<div class="drow-h">Dependiente ' + n +
+    '<button class="ibtn" onclick="document.getElementById(\'dep-' + n + '\').remove()">x</button></div>' +
+    '<div class="fg g3">' +
+    '<div class="f"><label>Nombre</label><input type="text" id="dp' + n + '-nom" placeholder="Ana Garcia"></div>' +
+    '<div class="f"><label>SSN</label><input type="text" id="dp' + n + '-ssn" placeholder="XXX-XX-XXXX"></div>' +
+    '<div class="f"><label>Relacion</label><select id="dp' + n + '-rel"><option>Daughter</option><option>Son</option><option>Spouse</option><option>Parent</option><option>Other</option></select></div>' +
+    '</div>' +
+    '<div class="fg">' +
+    '<div class="f"><label>Fecha de nacimiento</label><input type="date" id="dp' + n + '-dob"></div>' +
+    '<div class="f"><label>Meses en casa 2025</label><select id="dp' + n + '-m"><option value="12" selected>12</option>' +
+    [1,2,3,4,5,6,7,8,9,10,11].map(function(i){ return '<option value="' + i + '">' + i + '</option>'; }).join('') +
+    '</select></div></div>';
+  document.getElementById('dep-list').appendChild(div);
+}
+
+function addOficial() {
+  ofN++;
+  var n = ofN;
+  var div = document.createElement('div');
+  div.className = 'drow';
+  div.id = 'of-' + n;
+  div.innerHTML = '<div class="drow-h">Oficial / Miembro ' + n +
+    '<button class="ibtn" onclick="document.getElementById(\'of-' + n + '\').remove()">x</button></div>' +
+    '<div class="fg g3">' +
+    '<div class="f"><label>Nombre</label><input type="text" id="of' + n + '-nom" placeholder="Jose Garcia"></div>' +
+    '<div class="f"><label>Titulo</label><select id="of' + n + '-tit"><option>President/CEO</option><option>Vice President</option><option>Secretary</option><option>Treasurer</option><option>Member</option><option>Managing Member</option><option>Partner</option></select></div>' +
+    '<div class="f"><label>Direccion</label><input type="text" id="of' + n + '-addr" placeholder="Misma del negocio"></div>' +
+    '</div>';
+  document.getElementById('of-list').appendChild(div);
+}
+
+function collectData() {
+  function g(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+  function n(id) { return parseFloat(g(id)) || 0; }
+
+  if (clientType === 'individual') {
+    var deps = [];
+    document.querySelectorAll('[id^="dep-"]').forEach(function(d) {
+      var num = d.id.split('-')[1];
+      var nom = g('dp' + num + '-nom');
+      if (nom) deps.push({ nombre: nom, ssn: g('dp' + num + '-ssn'), relacion: g('dp' + num + '-rel'), meses: parseInt(g('dp' + num + '-m')) || 12 });
+    });
+    var sits = [];
+    document.querySelectorAll('.ck.on').forEach(function(el) { sits.push(el.textContent.trim()); });
+    return {
+      nombre: g('i-first'), apellido: g('i-last'), ssn: g('i-ssn'),
+      filing_status: g('i-fs'), address: g('i-addr'), city: g('i-city'),
+      state: 'TX', zip: g('i-zip'), email: g('i-email'), telefono: g('i-phone'),
+      conyuge: { nombre: g('i-cnom'), ssn: g('i-cssn') },
+      dependientes: deps, ingresos_marcados: sits, situaciones_marcadas: sits,
+      w2_wages: n('i-w2'), w2_withheld: n('i-fed'),
+      taxable_interest: n('i-int'), ordinary_dividends: n('i-div'),
+      income_1099_nec: n('i-nec'), income_1099_r: n('i-ira'),
+      unemployment: n('i-unemp'), k1_income: n('i-k1'),
+      routing_number: g('i-rtn'), account_number: g('i-acn'),
+      obamacare: { family_size: g('i-fam') || 1, magi: n('i-magi'), annual_premiums: n('i-oca'), annual_slcsp: n('i-ocb'), advance_ptc: n('i-occ') }
+    };
+  } else {
+    var ofs = [];
+    document.querySelectorAll('[id^="of-"]').forEach(function(d) {
+      var num = d.id.split('-')[1];
+      var nom = g('of' + num + '-nom');
+      if (nom) ofs.push({ nombre: nom, titulo: g('of' + num + '-tit'), address: g('of' + num + '-addr') });
+    });
+    return {
+      nombre: g('e-nom'),
+      empresa: {
+        nombre: g('e-nom'), tipo_entidad: g('e-tipo'), ein: g('e-ein'),
+        texas_taxpayer_number: g('e-txn'), address: g('e-addr'), actividad: g('e-act'), sic_code: '5812',
+        gross_receipts: n('e-rev'), cogs: n('e-cogs'), wages: n('e-wag'), officer_comp: n('e-ofc'),
+        rent: n('e-rnt'), advertising: n('e-adv'), utilities: n('e-uti'), insurance: n('e-ins'),
+        repairs: n('e-rep'), taxes_licenses: n('e-txl'), interest: n('e-int'),
+        depreciation: n('e-dep'), other_deductions: n('e-oth')
+      },
+      oficiales: ofs, socios: ofs,
+      declaracion_federal: true, declaracion_estatal: true, franchise_tax: true
+    };
+  }
+}
+
+function generatePDFs(btn) {
+  var orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Generando PDFs...';
+
+  var clientData = collectData();
+  fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_type: clientType, client_data: clientData })
+  })
+  .then(function(res) {
+    if (!res.ok) return res.json().then(function(e) { throw new Error(e.error || 'Error generando'); });
+    return res.blob();
+  })
+  .then(function(blob) {
+    var nom = (clientType === 'individual'
+      ? (clientData.nombre || '') + '_' + (clientData.apellido || '')
+      : (clientData.empresa && clientData.empresa.nombre) || 'empresa'
+    ).trim().replace(/\s+/g, '_').toLowerCase().replace(/[^a-z0-9_]/g, '') || 'cliente';
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nom + '_declaracion_2025.zip';
+    a.click();
+    toast('PDFs generados. Revisa tu carpeta de Descargas.');
+  })
+  .catch(function(err) { toast('Error: ' + err.message); })
+  .finally(function() { btn.disabled = false; btn.innerHTML = orig; });
+}
+
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+init();
+</script>
+</body>
+</html>
