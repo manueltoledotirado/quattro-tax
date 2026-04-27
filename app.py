@@ -98,6 +98,8 @@ def generate_pdfs():
             '1120s':      (os.path.join(BASE_DIR, 'f1120s.pdf'),  map_1120s,           'Form_1120S'),
             '1120':       (os.path.join(BASE_DIR, 'f1120.pdf'),   lambda d: [],        'Form_1120'),
             '1065':       (os.path.join(BASE_DIR, 'f1065.pdf'),   map_1065,            'Form_1065'),
+            'tx_05158a':  (os.path.join(BASE_DIR, 'f1120s.pdf'),  lambda d: [],        'TX_Franchise'),
+            'tx_05102':   (os.path.join(BASE_DIR, 'f1120s.pdf'),  lambda d: [],        'TX_PIR'),
         }
         generated = []
         for form_key in forms:
