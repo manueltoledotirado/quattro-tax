@@ -62,7 +62,7 @@ def extract_documents():
         content.append({'type': 'text', 'text': f'Analiza estos documentos fiscales 2025 de un cliente {client_type}. Extrae todos los números exactamente como aparecen. Responde SOLO con JSON sin markdown:\n{schema}'})
 
         message = client.messages.create(
-            model='claude-sonnet-4-20250514',
+            model='claude-3-5-sonnet-20241022',
             max_tokens=2000,
             messages=[{'role': 'user', 'content': content}]
         )
