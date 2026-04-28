@@ -30,3 +30,5 @@ fill_fillable_fields.py — Script helper para PDFs
 templates/index.html   — App web (frontend)
 f1040.pdf, f1040sc.pdf, etc. — Forms del IRS 2025
 ```
+actualizado
+
